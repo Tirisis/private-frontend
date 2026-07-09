@@ -5,5 +5,5 @@
 // 获取路径：Supabase 项目 → Project Settings → API
 // ============================================
 
-export const SUPABASE_URL = '你的 Project URL';
-export const SUPABASE_ANON_KEY = '你的 anon public key';
+export const SUPABASE_URL = 'https://ftjmupqndujrwiulxmry.supabase.co';
+export const SUPABASE_ANON_KEY = 'sb_publishable_i34ZrrHKjxF-NQVq3uLEMg_p8Y55GVp';
