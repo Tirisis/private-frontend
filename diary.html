@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>日记 · 私人记录</title>
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#f7f1e6">
+<link rel="stylesheet" href="./assets/style.css">
+</head>
+<body>
+  <div class="shell">
+    <header class="page-header">
+      <p class="eyebrow">Diary</p>
+      <h1 class="page-title">日记</h1>
+      <p class="page-sub">写下今天想留住的一点什么。</p>
+    </header>
+
+    <div id="config-banner"></div>
+
+    <section class="card">
+      <label class="field-label" for="content">今天想写点什么</label>
+      <textarea id="content" placeholder="哪怕只有一句话，也值得记下来……"></textarea>
+
+      <label class="field-label" style="margin-top:14px;">心情（可选）</label>
+      <div class="mood-row" id="mood-row">
+        <button type="button" class="mood-chip" data-mood="平静">🙂 平静</button>
+        <button type="button" class="mood-chip" data-mood="开心">😄 开心</button>
+        <button type="button" class="mood-chip" data-mood="难过">😔 难过</button>
+        <button type="button" class="mood-chip" data-mood="疲惫">🥱 疲惫</button>
+        <button type="button" class="mood-chip" data-mood="期待">✨ 期待</button>
+      </div>
+
+      <button id="save-btn" class="btn">保存这篇日记</button>
+    </section>
+
+    <h2 class="section-title">最近的记录</h2>
+    <div id="list-area">
+      <div class="state-block">
+        <div class="state-emoji">⏳</div>
+        <p class="state-title">正在读取…</p>
+      </div>
+    </div>
+  </div>
+
+  <nav class="tabbar">
+    <a class="tab-item" href="./index.html"><span>🏠</span>首页</a>
+    <a class="tab-item active" href="./diary.html"><span>📔</span>日记</a>
+  </nav>
+
+  <script type="module">
+    import { createClient } from 'https://esm.sh/@supabase/supabase-js';
+    import { SUPABASE_URL, SUPABASE_ANON_KEY } from './assets/config.js';
+
+    const listArea = document.getElementById('list-area');
+    const configBanner = document.getElementById('config-banner');
+    const contentEl = document.getElementById('content');
+    const saveBtn = document.getElementById('save-btn');
+    const moodRow = document.getElementById('mood-row');
+    let selectedMood = null;
+
+    moodRow.addEventListener('click', (e) => {
+      const chip = e.target.closest('.mood-chip');
+      if (!chip) return;
+      const isActive = chip.classList.contains('active');
+      moodRow.querySelectorAll('.mood-chip').forEach(c => c.classList.remove('active'));
+      if (!isActive) {
+        chip.classList.add('active');
+        selectedMood = chip.dataset.mood;
+      } else {
+        selectedMood = null;
+      }
+    });
+
+    // 还没填 Supabase 信息时，先提示，不直接报错崩溃
+    const notConfigured = !SUPABASE_URL || SUPABASE_URL.includes('你的') ||
+                           !SUPABASE_ANON_KEY || SUPABASE_ANON_KEY.includes('你的');
+
+    if (notConfigured) {
+      configBanner.innerHTML = `
+        <div class="banner banner-warn">
+          还没有连接 Supabase。打开 <code>assets/config.js</code>，
+          填入你的 Project URL 和 anon public key 后刷新页面即可。
+        </div>`;
+      listArea.innerHTML = `
+        <div class="state-block">
+          <div class="state-emoji">🔌</div>
+          <p class="state-title">尚未连接数据库</p>
+          <p class="state-sub">配置好 config.js 之后，这里会显示你保存过的日记。</p>
+        </div>`;
+      saveBtn.disabled = true;
+    } else {
+      init();
+    }
+
+    async function init() {
+      const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+      async function loadEntries() {
+        const { data, error } = await supabase
+          .from('diaries')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          renderError(error);
+          return;
+        }
+        renderList(data);
+      }
+
+      function renderError(error) {
+        let hint = error.message || '未知错误';
+        listArea.innerHTML = `
+          <div class="banner banner-error">
+            读取失败：${escapeHtml(hint)}
+          </div>`;
+      }
+
+      function renderList(entries) {
+        if (!entries || entries.length === 0) {
+          listArea.innerHTML = `
+            <div class="state-block">
+              <div class="state-emoji">🌙</div>
+              <p class="state-title">还没有记录</p>
+              <p class="state-sub">写下第一篇日记，它会出现在这里。</p>
+            </div>`;
+          return;
+        }
+
+        listArea.innerHTML = `<div class="entry-list">${entries.map(entryHtml).join('')}</div>`;
+      }
+
+      function entryHtml(entry) {
+        const date = formatDate(entry.created_at);
+        const moodTag = entry.mood ? `<span class="entry-mood">${escapeHtml(entry.mood)}</span>` : '';
+        return `
+          <article class="entry-card">
+            <div class="entry-meta">
+              <span class="entry-date">${date}</span>
+              ${moodTag}
+            </div>
+            <p class="entry-content">${escapeHtml(entry.content)}</p>
+          </article>`;
+      }
+
+      function formatDate(iso) {
+        if (!iso) return '';
+        const d = new Date(iso);
+        return d.toLocaleString('zh-CN', {
+          year: 'numeric', month: '2-digit', day: '2-digit',
+          hour: '2-digit', minute: '2-digit'
+        });
+      }
+
+      function escapeHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = str ?? '';
+        return div.innerHTML;
+      }
+
+      saveBtn.addEventListener('click', async () => {
+        const content = contentEl.value.trim();
+        if (!content) {
+          contentEl.focus();
+          return;
+        }
+
+        saveBtn.disabled = true;
+        saveBtn.textContent = '保存中…';
+
+        const { error } = await supabase
+          .from('diaries')
+          .insert({ content, mood: selectedMood });
+
+        saveBtn.disabled = false;
+        saveBtn.textContent = '保存这篇日记';
+
+        if (error) {
+          configBanner.innerHTML = `
+            <div class="banner banner-error">
+              保存失败：${escapeHtml(error.message)}
+              ${error.message && error.message.includes('row-level security')
+                ? '（多半是 RLS 策略没配置，去 Supabase 检查 diaries 表的 insert 策略）'
+                : ''}
+            </div>`;
+          return;
+        }
+
+        contentEl.value = '';
+        moodRow.querySelectorAll('.mood-chip').forEach(c => c.classList.remove('active'));
+        selectedMood = null;
+        configBanner.innerHTML = '';
+        loadEntries();
+      });
+
+      loadEntries();
+    }
+  </script>
+</body>
+</html>
