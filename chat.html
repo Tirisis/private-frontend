@@ -3327,7 +3327,7 @@ async function startChat() {
   elevenApiKey = elevenInput.value.trim();
   openaiApiKey = openaiInput.value.trim();
   googleApiKey = googleInput.value.trim();
-  // if (!claudeApiKey) return;
+  // // 已禁用 Claude Key 检查
 
 
   saveKeys();
@@ -8667,7 +8667,7 @@ function viewDiary(dateStr) {
 // --- Core logic: check what diary should exist and generate if needed ---
 async function checkAndGenerateDiary() {
   if (!memoryEnabled || !memoryDirHandle || diaryGenerating) return;
-  // if (!claudeApiKey) return;
+  // // 已禁用 Claude Key 检查
 
   // Ensure diaries are loaded
   if (!diaryLoaded) {
