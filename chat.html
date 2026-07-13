@@ -3327,7 +3327,7 @@ async function startChat() {
   elevenApiKey = elevenInput.value.trim();
   openaiApiKey = openaiInput.value.trim();
   googleApiKey = googleInput.value.trim();
-  if (!claudeApiKey) return;
+  // if (!claudeApiKey) return;
 
 
   saveKeys();
@@ -6489,7 +6489,7 @@ let memoryEnabled = false;
 
 // === Retro-import existing conversation history into Imprint Memory ===
 async function retroImportHistory() {
-  if (!claudeApiKey) { alert("需要先登录（Anthropic API Key）"); return; }
+  if (!claudeApiKey) { // alert("需要先登录（Anthropic API Key）"); return; }
 
   // Collect all text messages from conversationHistory
   const textMsgs = conversationHistory.filter(m =>
@@ -8667,7 +8667,7 @@ function viewDiary(dateStr) {
 // --- Core logic: check what diary should exist and generate if needed ---
 async function checkAndGenerateDiary() {
   if (!memoryEnabled || !memoryDirHandle || diaryGenerating) return;
-  if (!claudeApiKey) return;
+  // if (!claudeApiKey) return;
 
   // Ensure diaries are loaded
   if (!diaryLoaded) {
