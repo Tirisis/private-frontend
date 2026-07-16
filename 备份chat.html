@@ -2102,7 +2102,8 @@
 <div class="input-area" id="inputArea">
   <button class="input-mode-btn" id="batchModeBtn" onclick="toggleBatchMode()" title="连续发送模式" style="font-size:15px">📌</button>
   <button class="input-mode-btn" id="modeBtn" onclick="toggleInputMode()" disabled>🎤</button>
-  <input class="chat-input" id="chatInput" placeholder="跟我说话..." disabled
+  <div style="margin-bottom:8px;"><input type="password" id="doubaoKey" placeholder="豆包Key（图片识别）" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px;background:var(--bg-card);color:var(--text-primary);"></div>
+<input class="chat-input" id="chatInput" placeholder="跟我说话..." disabled
          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}"
          onpaste="handlePaste(event)" />
   <div class="hold-to-talk" id="holdToTalk" style="display:none"
@@ -4621,7 +4622,9 @@ async function sendMessage() {
 
   // Display message in chat
   if (imageData) {
-    await appendImageMessage(text, imageData.dataUrl, true);
+    const douBaoDesc = await recognizeImageWithDoubao(imageData.dataUrl);
+text = `【图片识别】${douBaoDesc}\n【用户说】${text}`;
+await appendImageMessage(text, imageData.dataUrl, true);
   } else if (!fileData) {
     appendMessage("user", text, true, undefined, replyData);
   }
