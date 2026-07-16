@@ -2118,7 +2118,6 @@ async function recognizeImageWithDoubao(imageDataUrl) {
   }
 
   try {
-    // 压缩图片到合理大小
     let processedUrl = imageDataUrl;
     try {
       processedUrl = await compressImage(imageDataUrl, 1024);
@@ -2132,7 +2131,7 @@ async function recognizeImageWithDoubao(imageDataUrl) {
       },
       body: safeStringify({
         model: "doubao-seed-2-0-lite-260428",
-        messages: [
+        input: [
           {
             role: "user",
             content: [
@@ -2146,9 +2145,7 @@ async function recognizeImageWithDoubao(imageDataUrl) {
               }
             ]
           }
-        ],
-        max_tokens: 100,
-        temperature: 0.3
+        ]
       })
     });
 
@@ -2159,8 +2156,23 @@ async function recognizeImageWithDoubao(imageDataUrl) {
     }
 
     const data = await response.json();
-    const description = data.choices?.[0]?.message?.content || "（无法识别）";
-    return description.trim();
+
+    let description = "";
+    for (const item of data.output || []) {
+      if (item.type === "message" && item.role === "assistant") {
+        for (const content of item.content || []) {
+          if (content.type === "output_text") {
+            description += content.text;
+          }
+        }
+      }
+    }
+
+    if (!description && data.choices) {
+      description = data.choices?.[0]?.message?.content || "";
+    }
+
+    return description.trim() || "（无法识别）";
 
   } catch (error) {
     console.error("豆包识别异常:", error);
